@@ -10,5 +10,7 @@ app.use(user_route);
 app.use(journal_route);
 app.use(feed_route);
 app.use(table_route);
-
+app.get("/", (req, res) => {
+    res.send("Hello! Check the postman documentation.")
+})
 module.exports = app;
