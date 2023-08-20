@@ -99,7 +99,7 @@ exports.get_journal = async (req, res, next) => {
         res.status(500).json({
             message: "Internal server error",
             success: false,
-            error,
+            error:error.message,
         });
     }
 };
@@ -116,7 +116,7 @@ exports.delete_journal = async (req, res, next) => {
         res.status(500).json({
             message: "Internal server error",
             success: false,
-            error,
+            error:error.message,
         });
     }
 };
@@ -132,26 +132,34 @@ exports.update_journal = async (req, res, next) => {
         }
         const jid = req.params.jid;
 
-        try {
-            const journal = await db("journal")
-                .returning("jid")
-                .where("jid", jid)
-                .update(updateData);
-            const journalupdate = journal[0];
-
-            res.status(200).json({
-                message: "Journal updated",
-                success: true,
-                journalupdate,
-            });
-        } catch (error) {
-            console.log(error);
+        if (req.body.student_ids) {
+            await db("tags").del().where("jid",jid);
+            const tagsdata = req.body.student_ids
+                .split(",")
+                .map(Number)
+                .map((student_id) => {
+                    return { jid, sid: student_id };
+                });
+            const tags = await db("tags").returning("sid").insert(tagsdata);
         }
+        delete updateData.student_ids;
+
+        const journal = await db("journal")
+            .returning("jid")
+            .where("jid", jid)
+            .update(updateData);
+        const journalupdate = journal[0];
+
+        res.status(200).json({
+            message: "Journal updated",
+            success: true,
+            journalupdate,
+        });
     } catch (error) {
         res.status(500).json({
             message: "Internal server error",
             success: false,
-            error,
+            error:error.message,
         });
     }
 };
